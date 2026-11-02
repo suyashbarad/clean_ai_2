@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CleanGreen AI 2.0 | Pune Smart City Waste Management & Cleanliness Intelligence</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- exifr for EXIF GPS metadata -->
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="bg-canvas">
+
+  <!-- Top Navigation Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group" onclick="switchView('landing')">
+        <div class="brand-logo">
+          <i class="fa-solid fa-leaf"></i>
+        </div>
+        <div class="brand-info">
+          <div class="brand-sub"><i class="fa-solid fa-shield-halved"></i> PMC SWACHH PUNE INITIATIVE</div>
+          <h1 class="brand-title">CleanGreen <span class="text-emerald">AI 2.0</span></h1>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="main-nav">
+        <button class="nav-link active" data-view="landing" onclick="switchView('landing')">
+          <i class="fa-solid fa-house"></i> <span>Home</span>
+        </button>
+        <button class="nav-link" data-view="citizen" onclick="switchView('citizen')">
+          <i class="fa-solid fa-camera"></i> <span>Report Waste</span>
+        </button>
+        <button class="nav-link" data-view="tracker" onclick="switchView('tracker')">
+          <i class="fa-solid fa-list-check"></i> <span>Track & Audits</span>
+        </button>
+        <button class="nav-link" data-view="map" onclick="switchView('map')">
+          <i class="fa-solid fa-map-location-dot"></i> <span>Smart Map</span>
+        </button>
+        <button class="nav-link" data-view="rewards" onclick="switchView('rewards')">
+          <i class="fa-solid fa-gift"></i> <span>Pune Rewards</span>
+        </button>
+        <button class="nav-link" data-view="admin" onclick="switchView('admin')">
+          <i class="fa-solid fa-truck-moving text-emerald"></i> <span>Admin & Truck</span>
+        </button>
+        <button class="nav-link worker-only" data-view="worker" onclick="switchView('worker')">
+          <i class="fa-solid fa-truck-pickup"></i> <span>Worker Tasks</span>
+        </button>
+        <button class="nav-link admin-only" data-view="hotspots" onclick="switchView('hotspots')">
+          <i class="fa-solid fa-fire"></i> <span>Hotspots (DBSCAN)</span>
+        </button>
+        <button class="nav-link admin-only" data-view="mclp" onclick="switchView('mclp')">
+          <i class="fa-solid fa-trash-can-arrow-up"></i> <span>Smart Bins (MCLP)</span>
+        </button>
+      </nav>
+
+      <!-- Right Header Actions -->
+      <div class="header-actions">
+        <!-- Role Switcher -->
+        <div class="role-selector-pill">
+          <label for="role-select"><i class="fa-solid fa-user-gear"></i> Role:</label>
+          <select id="role-select" onchange="handleRoleChange(this.value)">
+            <option value="citizen" selected>Citizen (Aarav)</option>
+            <option value="admin">Municipal Admin (PMC)</option>
+            <option value="worker">Sanitation Worker (Ramesh)</option>
+            <option value="superadmin">Super Admin</option>
+          </select>
+        </div>
+
+        <!-- Green Credits Wallet -->
+        <button class="credits-pill" onclick="switchView('rewards')" title="View Green Credits & Redeem Pune Vouchers">
+          <i class="fa-solid fa-coins text-gold"></i>
+          <span id="header-credits-val" class="credits-number">300</span>
+          <span class="credits-suffix">PTS</span>
+        </button>
+
+        <!-- CleanBot Toggle -->
+        <button class="cleanbot-toggle-btn" onclick="toggleCleanBot()" title="Open CleanBot AI Assistant">
+          <i class="fa-solid fa-robot"></i>
+          <span class="pulse-indicator"></span>
+          <span class="btn-text">CleanBot</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="app-main">
+
+    <!-- 1. LANDING VIEW -->
+    <section id="view-landing" class="view-panel active">
+      <div class="hero-banner">
+        <div class="hero-content">
+          <div class="badge-pill"><i class="fa-solid fa-sparkles"></i> Powered by Sarvam AI & DBSCAN ML Geospatial Engine</div>
+          <h2 class="hero-title">Smart Waste Intelligence for a Cleaner Pune</h2>
+          <p class="hero-desc">Empowering citizens, sanitation frontline workers, and municipal authorities with real-time computer vision waste detection, automated worker dispatch, hotspot clustering, and civic rewards.</p>
+          <div class="hero-cta-group">
+            <button class="btn btn-primary" onclick="switchView('citizen')">
+              <i class="fa-solid fa-camera"></i> Report Waste Issue
+            </button>
+            <button class="btn btn-secondary" onclick="openForensicModal('CMP-20261007_213322-553F')">
+              <i class="fa-solid fa-microchip text-emerald"></i> View Forensic Waste Audit
+            </button>
+            <button class="btn btn-outline" onclick="switchView('admin'); setTimeout(() => toggleTruckSimulation(), 400);">
+              <i class="fa-solid fa-truck-moving text-gold"></i> Live Collection Truck
+            </button>
+            <button class="btn btn-outline" onclick="switchView('map')">
+              <i class="fa-solid fa-map-location-dot"></i> Pune Smart Map
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Action Ease-of-Use Cards -->
+      <div class="quick-action-strip">
+        <div class="quick-card" onclick="switchView('citizen')">
+          <div class="quick-icon bg-emerald-light text-emerald"><i class="fa-solid fa-camera"></i></div>
+          <div class="quick-text">
+            <strong>1. Snap & Report</strong>
+            <span>Photo upload with auto EXIF GPS</span>
+          </div>
+        </div>
+        <div class="quick-card" onclick="openForensicModal('CMP-20261007_213322-553F')">
+          <div class="quick-icon bg-blue-light text-blue"><i class="fa-solid fa-microchip"></i></div>
+          <div class="quick-text">
+            <strong>2. Forensic AI Audit</strong>
+            <span>14 items, 7 metrics & SUP violations</span>
+          </div>
+        </div>
+        <div class="quick-card" onclick="switchView('admin'); setTimeout(() => toggleTruckSimulation(), 400);">
+          <div class="quick-icon bg-purple-light text-purple"><i class="fa-solid fa-truck"></i></div>
+          <div class="quick-text">
+            <strong>3. Live Toy Truck</strong>
+            <span>Watch truck empty MCLP smart bins</span>
+          </div>
+        </div>
+        <div class="quick-card" onclick="switchView('rewards')">
+          <div class="quick-icon bg-amber-light text-amber"><i class="fa-solid fa-gift"></i></div>
+          <div class="quick-text">
+            <strong>4. Pune Metro Voucher</strong>
+            <span>Redeem Green Credits for transit</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Live City Pulse Stats -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon bg-emerald-light"><i class="fa-solid fa-circle-check text-emerald"></i></div>
+          <div class="stat-data">
+            <h3 id="stat-total-complaints" class="stat-value">--</h3>
+            <p class="stat-label">Total Registered Reports</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon bg-blue-light"><i class="fa-solid fa-check-double text-blue"></i></div>
+          <div class="stat-data">
+            <h3 id="stat-resolution-rate" class="stat-value">--%</h3>
+            <p class="stat-label">Resolution SLA Rate</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon bg-amber-light"><i class="fa-solid fa-trash-can text-amber"></i></div>
+          <div class="stat-data">
+            <h3 id="stat-active-bins" class="stat-value">--</h3>
+            <p class="stat-label">Monitored Pune Bins</p>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon bg-purple-light"><i class="fa-solid fa-coins text-purple"></i></div>
+          <div class="stat-data">
+            <h3 id="stat-credits-awarded" class="stat-value">1,450</h3>
+            <p class="stat-label">Green Credits Earned</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Matrix -->
+      <div class="feature-section">
+        <h3 class="section-title">Core Intelligence Capabilities</h3>
+        <div class="features-grid">
+          <div class="feature-card" onclick="switchView('citizen')">
+            <div class="feature-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+            <h4>Garbage-Vision AI</h4>
+            <p>Upload photos with automatic EXIF GPS extraction. Real-time classification into 10 waste categories, severity, overflow status, and confidence scores.</p>
+          </div>
+          <div class="feature-card" onclick="switchView('hotspots')">
+            <div class="feature-icon"><i class="fa-solid fa-fire"></i></div>
+            <h4>DBSCAN Hotspot Prediction</h4>
+            <p>Scikit-learn density-based spatial clustering to discover chronic dump clusters and predict high-risk cleanliness zones across Pune wards.</p>
+          </div>
+          <div class="feature-card" onclick="switchView('mclp')">
+            <div class="feature-icon"><i class="fa-solid fa-calculator"></i></div>
+            <h4>MCLP Smart-Bin Placement</h4>
+            <p>Mathematical Maximum Covering Location Problem solver that computes optimal spots for new smart bins to maximize citizen coverage.</p>
+          </div>
+          <div class="feature-card" onclick="switchView('worker')">
+            <div class="feature-icon"><i class="fa-solid fa-route"></i></div>
+            <h4>Workforce TSP Routing</h4>
+            <p>Automated task assignments and traveling salesperson nearest-neighbor route optimization for sanitation collection trucks.</p>
+          </div>
+          <div class="feature-card" onclick="switchView('rewards')">
+            <div class="feature-icon"><i class="fa-solid fa-gift"></i></div>
+            <h4>Pune Civic Rewards</h4>
+            <p>Earn Green Credits for verified reports and redeem for MahaMetro tickets, PMPML bus passes, and PMC civic incentives.</p>
+          </div>
+          <div class="feature-card" onclick="toggleCleanBot()">
+            <div class="feature-icon"><i class="fa-solid fa-comments"></i></div>
+            <h4>CleanBot AI (Sarvam AI)</h4>
+            <p>Interactive multilingual conversational AI powered by Sarvam AI (`sarvam-105b-conversations`) trained on Pune municipal data.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. CITIZEN REPORT VIEW -->
+    <section id="view-citizen" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="view-title"><i class="fa-solid fa-camera"></i> Report Waste Issue</h2>
+          <p class="view-subtitle">Upload a photograph of the waste accumulation. Our AI will automatically classify category, severity, and recommend action.</p>
+        </div>
+      </div>
+
+      <div class="report-grid">
+        <!-- Photo Upload & AI Vision Card -->
+        <div class="card form-card">
+          <h3 class="card-title"><i class="fa-solid fa-image"></i> 1. Waste Photograph & AI Analysis</h3>
+          <div class="drop-zone" id="drop-zone" onclick="document.getElementById('photo-input').click()">
+            <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoSelected(this)" />
+            <div id="drop-prompt" class="drop-prompt">
+              <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
+              <p class="drop-text"><strong>Drag & Drop photo</strong> or <span>Browse files</span></p>
+              <p class="drop-hint">JPEG, PNG or WebP. GPS coordinates are automatically extracted from EXIF.</p>
+            </div>
+            <div id="preview-wrapper" class="preview-wrapper hidden">
+              <img id="image-preview" src="" alt="Waste Preview" class="preview-img" />
+              <div class="preview-meta">
+                <span id="preview-filename" class="badge">photo.jpg</span>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeSelectedPhoto(event)"><i class="fa-solid fa-trash"></i> Remove</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- EXIF Alert -->
+          <div id="exif-alert" class="alert-box alert-info hidden">
+            <i class="fa-solid fa-location-crosshairs"></i>
+            <div class="alert-body">
+              <strong>GPS Extracted from Photo EXIF:</strong>
+              <span id="exif-coords-display">Lat: --, Lng: --</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline" onclick="applyExifLocation()">Apply GPS</button>
+          </div>
+
+          <!-- AI Vision Realtime Inspector Card -->
+          <div id="ai-vision-box" class="ai-inspector-box hidden">
+            <div class="ai-box-header">
+              <div class="ai-badge"><i class="fa-solid fa-microchip"></i> AI Vision Model Analysis</div>
+              <span id="ai-conf-badge" class="badge badge-success">94% Confidence</span>
+            </div>
+            <div class="ai-results-grid">
+              <div class="ai-result-item">
+                <span class="ai-label">Detected Category:</span>
+                <strong id="ai-category-val" class="ai-val">Plastic Waste</strong>
+              </div>
+              <div class="ai-result-item">
+                <span class="ai-label">Assessed Severity:</span>
+                <span id="ai-severity-badge" class="badge badge-warning">Medium</span>
+              </div>
+              <div class="ai-result-item">
+                <span class="ai-label">Accumulation:</span>
+                <strong id="ai-accumulation-val" class="ai-val">Moderate</strong>
+              </div>
+              <div class="ai-result-item">
+                <span class="ai-label">Hazard / Spill:</span>
+                <span id="ai-hazard-badge" class="badge badge-info">None</span>
+              </div>
+            </div>
+            <div class="ai-action-box">
+              <div class="ai-action-label"><i class="fa-solid fa-truck-fast"></i> Recommended Municipal Action:</div>
+              <p id="ai-recommended-val" class="ai-action-text">Dispatch dry-waste segregation unit with manual baler.</p>
+            </div>
+            <p class="ai-disclaimer"><i class="fa-solid fa-circle-info"></i> AI detection estimate based on computer vision model. You can manually adjust below if needed.</p>
+          </div>
+
+          <!-- Form Fields -->
+          <div class="form-group">
+            <label for="form-category">Waste Category (AI Auto-Filled / Manual Override):</label>
+            <select id="form-category" class="form-input">
+              <option value="Plastic Waste">Plastic Waste</option>
+              <option value="Organic Waste">Organic Waste</option>
+              <option value="Mixed Municipal Waste" selected>Mixed Municipal Waste</option>
+              <option value="Construction Debris">Construction Debris</option>
+              <option value="Electronic Waste">Electronic Waste</option>
+              <option value="Medical Waste">Medical Waste (Bio-hazard)</option>
+              <option value="Hazardous Waste">Hazardous Waste (Chemical / Toxic)</option>
+              <option value="Paper and Cardboard">Paper and Cardboard</option>
+              <option value="Glass">Glass</option>
+              <option value="Metal">Metal</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="form-ward">Ward Jurisdiction (Pune):</label>
+            <select id="form-ward" class="form-input">
+              <option value="W-KOT" selected>Kothrud - Bavdhan (Zone 3)</option>
+              <option value="W-SHV">Shivajinagar - FC Road (Zone 1)</option>
+              <option value="W-SWG">Swargate - Parvati (Zone 2)</option>
+              <option value="W-AUN">Aundh - Baner (Zone 4)</option>
+              <option value="W-VMN">Viman Nagar - Nagar Road (Zone 5)</option>
+              <option value="W-HDP">Hadapsar - Magarpatta (Zone 6)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="form-notes">Additional Landmark & Description:</label>
+            <textarea id="form-notes" class="form-input" rows="2" placeholder="e.g. Near MIT-WPU Gate 3, Paud Road pavement opposite tea stall..."></textarea>
+          </div>
+        </div>
+
+        <!-- Location Pin Card with Leaflet -->
+        <div class="card map-input-card">
+          <div class="map-card-header">
+            <h3 class="card-title"><i class="fa-solid fa-location-dot"></i> 2. Geo-Location Pin (Draggable)</h3>
+            <div class="map-controls">
+              <button type="button" class="btn btn-sm btn-outline" onclick="getUserCurrentLocation()"><i class="fa-solid fa-crosshairs"></i> Use GPS</button>
+              <button type="button" class="btn btn-sm btn-outline" onclick="resetToMIT()"><i class="fa-solid fa-rotate-left"></i> MIT-WPU</button>
+            </div>
+          </div>
+          <div id="report-map" class="report-map-container"></div>
+          <div class="coords-bar">
+            <div class="coord-item">
+              <span class="coord-label">LAT:</span>
+              <span id="report-lat-val" class="mono text-emerald">18.517800</span>
+            </div>
+            <div class="coord-item">
+              <span class="coord-label">LNG:</span>
+              <span id="report-lng-val" class="mono text-emerald">73.815100</span>
+            </div>
+          </div>
+          <div class="address-preview">
+            <i class="fa-solid fa-map-pin text-emerald"></i>
+            <span id="report-resolved-address">MIT World Peace University, Paud Road, Kothrud, Pune</span>
+          </div>
+
+          <button type="button" id="btn-submit-report" class="btn btn-primary btn-block btn-lg" onclick="submitWasteReport()">
+            <i class="fa-solid fa-paper-plane"></i> Submit Waste Complaint (+50 PTS)
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. TRACK COMPLAINTS VIEW -->
+    <section id="view-tracker" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="view-title"><i class="fa-solid fa-list-check"></i> Complaint Lifecycle Tracker</h2>
+          <p class="view-subtitle">Monitor real-time status updates, AI severity flags, worker assignments, and verified before-and-after resolution photos.</p>
+        </div>
+        <div class="filter-actions">
+          <select id="tracker-filter-status" class="form-input-sm" onchange="loadComplaintsList()">
+            <option value="All">All Statuses</option>
+            <option value="Verified">Verified</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Worker En Route">Worker En Route</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+          <input type="text" id="tracker-search" class="form-input-sm" placeholder="Search ID or street..." oninput="loadComplaintsList()" />
+        </div>
+      </div>
+
+      <!-- Complaints List Container -->
+      <div id="complaints-list" class="complaints-container">
+        <!-- Rendered via JavaScript -->
+      </div>
+    </section>
+
+    <!-- 4. SMART CITY MAP VIEW -->
+    <section id="view-map" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="view-title"><i class="fa-solid fa-map-location-dot"></i> Pune Geospatial Cleanliness Map</h2>
+          <p class="view-subtitle">Interactive visualization of public community dustbins, active waste reports, verified resolutions, and hotspots.</p>
+        </div>
+        <div class="map-legend">
+          <span class="legend-chip"><i class="fa-solid fa-trash text-emerald"></i> Normal Bin</span>
+          <span class="legend-chip"><i class="fa-solid fa-trash text-amber"></i> Overflow Bin</span>
+          <span class="legend-chip"><i class="fa-solid fa-triangle-exclamation text-red"></i> Waste Issue</span>
+          <span class="legend-chip"><i class="fa-solid fa-circle-check text-blue"></i> Resolved Issue</span>
+          <span class="legend-chip"><i class="fa-solid fa-fire text-purple"></i> DBSCAN Hotspot</span>
+        </div>
+      </div>
+
+      <div class="map-view-wrapper">
+        <div id="city-map" class="city-map-container"></div>
+      </div>
+    </section>
+
+    <!-- 5. REWARDS HUB VIEW -->
+    <section id="view-rewards" class="view-panel">
+      <div class="rewards-hero">
+        <div class="rewards-hero-content">
+          <div class="credits-badge"><i class="fa-solid fa-coins"></i> Citizen Cleanliness Wallet</div>
+          <h2 class="rewards-balance"><span id="rewards-balance-val">300</span> <small>Green Credits</small></h2>
+          <p class="rewards-tagline">Earn 50 PTS per verified waste report + 25 PTS when cleanup is resolved. Redeem for real Pune transport & municipal benefits!</p>
+        </div>
+      </div>
+
+      <div class="rewards-layout">
+        <!-- Vouchers Catalog -->
+        <div class="catalog-column">
+          <h3 class="card-title"><i class="fa-solid fa-tags"></i> Available Pune Civic Vouchers</h3>
+          <div id="vouchers-catalog-grid" class="vouchers-grid">
+            <!-- Rendered dynamically -->
+          </div>
+
+          <!-- My Redeemed Active Vouchers -->
+          <h3 class="card-title mt-4"><i class="fa-solid fa-ticket"></i> My Active Digital Vouchers</h3>
+          <div id="user-vouchers-list" class="user-vouchers-grid">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Leaderboard & Activity Sidebar -->
+        <div class="leaderboard-column">
+          <div class="card">
+            <h3 class="card-title"><i class="fa-solid fa-trophy text-gold"></i> Pune Swachh Leaderboard</h3>
+            <div id="leaderboard-list" class="leaderboard-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <div class="card mt-4">
+            <h3 class="card-title"><i class="fa-solid fa-clock-rotate-left"></i> Credits Activity Log</h3>
+            <div id="transactions-list" class="transactions-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. MUNICIPAL ADMIN VIEW -->
+    <section id="view-admin" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="view-title"><i class="fa-solid fa-shield-halved"></i> Municipal Administrator Portal</h2>
+          <p class="view-subtitle">Citywide waste monitoring, complaint triage, worker dispatching, and resolution compliance.</p>
+        </div>
+        <div class="header-actions">
+          <a href="/api/analytics/export/csv" class="btn btn-outline btn-sm" download>
+            <i class="fa-solid fa-download"></i> Export CSV Report
+          </a>
+          <button class="btn btn-primary btn-sm" onclick="switchView('hotspots')">
+            <i class="fa-solid fa-fire"></i> View Hotspots
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Toy Truck Simulation Card (MCLP Locations) -->
+      <div class="card mb-4 border-emerald shadow-md">
+        <div class="flex justify-between items-center flex-wrap gap-2 mb-3">
+          <div>
+            <h3 class="card-title mb-1">
+              <i class="fa-solid fa-truck-moving text-emerald"></i> Live Smart Truck Dispatch & MCLP Collection Route
+            </h3>
+            <p class="text-xs text-muted">Watch the municipal toy garbage truck navigate and collect waste from all Pune MCLP smart-bin stations in real-time.</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <button id="btn-truck-play" class="btn btn-sm btn-primary" onclick="toggleTruckSimulation()">
+              <i class="fa-solid fa-play"></i> Start Truck Route
+            </button>
+            <div class="speed-toggle-group">
+              <button class="speed-btn active" data-speed="1" onclick="setTruckSpeed(1)">1x</button>
+              <button class="speed-btn" data-speed="3" onclick="setTruckSpeed(3)">3x Fast</button>
+              <button class="speed-btn" data-speed="8" onclick="setTruckSpeed(8)">8x Turbo</button>
+            </div>
+            <button class="btn btn-sm btn-outline text-muted" onclick="resetTruckSimulation()">
+              <i class="fa-solid fa-rotate-left"></i> Reset
+            </button>
+          </div>
+        </div>
+
+        <!-- Telemetry Status Ribbon -->
+        <div class="truck-hud-bar">
+          <div class="hud-item">
+            <span class="hud-label">FLEET TRUCK:</span>
+            <strong class="hud-val text-primary"><i class="fa-solid fa-truck text-emerald"></i> PMC-EV-01</strong>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">CURRENT STATUS:</span>
+            <strong id="truck-status-text" class="hud-val text-emerald">Ready at Swargate Depot</strong>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">SPEED:</span>
+            <strong id="truck-speed-display" class="hud-val text-blue">48 km/h</strong>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">LOAD COLLECTED:</span>
+            <strong id="truck-payload-display" class="hud-val text-amber">0 kg / 1,500 kg</strong>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">MCLP BINS CLEARED:</span>
+            <strong id="truck-bins-display" class="hud-val text-purple">0 / 4</strong>
+          </div>
+        </div>
+
+        <!-- Map Container for Truck Simulation -->
+        <div id="admin-truck-map" class="admin-truck-map-container"></div>
+      </div>
+
+      <!-- Admin Table Container -->
+      <div class="card table-card">
+        <div class="table-header-bar">
+          <h3 class="card-title"><i class="fa-solid fa-table-list"></i> All Complaints Across Pune</h3>
+          <div class="table-filter-group">
+            <select id="admin-filter-status" class="form-input-sm" onchange="loadAdminComplaints()">
+              <option value="All">All Statuses</option>
+              <option value="Submitted">Submitted</option>
+              <option value="Verified">Verified</option>
+              <option value="Assigned">Assigned</option>
+              <option value="Resolved">Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Complaint ID</th>
+                <th>Photo</th>
+                <th>Location / Ward</th>
+                <th>Category</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Assigned Worker</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="admin-complaints-tbody">
+              <!-- Rendered dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. SANITATION WORKER VIEW -->
+    <section id="view-worker" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="view-title"><i class="fa-solid fa-truck-pickup"></i> Sanitation Worker Dashboard</h2>
+          <p class="view-subtitle">Worker: <strong>Ramesh Shinde</strong> (Zone 3 - West, Vehicle: MH 12 QX 4402)</p>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="optimizeWorkerRoute('WRK-101')">
+          <i class="fa-solid fa-route"></i> Optimize Route (TSP)
+        </button>
+      </div>
+
+      <div class="worker-layout">
+        <!-- Active Tasks Column -->
+        <div class="worker-tasks-col">
+          <h3 class="card-title"><i class="fa-solid fa-clipboard-list"></i> Assigned Cleanup Orders</h3>
+          <div id="worker-tasks-list" class="tasks-container">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <!-- Worker Route Map -->
+        <div class="worker-map-col">
+          <div class="card">
+            <h3 class="card-title"><i class="fa-solid fa-compass"></i> Route Navigation</h3>
+            <div id="worker-route-map" class="worker-route-map"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. DBSCAN HOTSPOTS VIEW -->
+    <section id="view-hotspots" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="view-title"><i class="fa-solid fa-fire text-red"></i> AI-Based Waste Hotspot Prediction</h2>
+          <p class="view-subtitle">Using DBSCAN density clustering on geospatial coordinates to locate chronic waste dump hotspots and predict high-risk wards.</p>
+        </div>
+        <div class="controls-pill">
+          <label>Radius (eps):</label>
+          <select id="dbscan-eps" class="form-input-sm" onchange="runHotspotsAnalysis()">
+            <option value="250">250 meters</option>
+            <option value="350" selected>350 meters</option>
+            <option value="500">500 meters</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="hotspots-grid">
+        <div class="card">
+          <h3 class="card-title"><i class="fa-solid fa-layer-group"></i> Detected Hotspot Clusters</h3>
+          <div id="hotspot-clusters-list" class="hotspots-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title"><i class="fa-solid fa-chart-pie"></i> Ward-Level Risk Assessment</h3>
+          <div class="chart-box">
+            <canvas id="ward-risk-chart"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. SMART-BIN MCLP OPTIMIZER VIEW -->
+    <section id="view-mclp" class="view-panel">
+      <div class="section-header">
+        <div>
+          <h2 class="view-title"><i class="fa-solid fa-trash-can-arrow-up text-emerald"></i> MCLP Smart-Bin Placement Optimization</h2>
+          <p class="view-subtitle">Maximum Covering Location Problem (MCLP) solver calculating optimal placements for new smart bins to maximize coverage.</p>
+        </div>
+        <div class="mclp-inputs">
+          <label>New Bins to Place (K):</label>
+          <input type="number" id="mclp-k-input" class="form-input-sm" value="4" min="1" max="10" />
+          <button class="btn btn-primary btn-sm" onclick="runMCLPOptimization()">
+            <i class="fa-solid fa-play"></i> Run MCLP Solver
+          </button>
+        </div>
+      </div>
+
+      <div class="mclp-results-grid">
+        <div class="card mclp-stats-card">
+          <h3 class="card-title"><i class="fa-solid fa-square-poll-vertical"></i> Optimization Coverage Gains</h3>
+          <div class="mclp-metrics">
+            <div class="metric-item">
+              <span class="metric-label">Baseline Coverage</span>
+              <strong id="mclp-baseline-pct" class="metric-val">--%</strong>
+            </div>
+            <div class="metric-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+            <div class="metric-item">
+              <span class="metric-label">Optimized Coverage</span>
+              <strong id="mclp-optimized-pct" class="metric-val text-emerald">--%</strong>
+            </div>
+            <div class="metric-item highlight">
+              <span class="metric-label">Coverage Delta</span>
+              <strong id="mclp-delta-pct" class="metric-val text-emerald">+--%</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 class="card-title"><i class="fa-solid fa-map-pin"></i> Recommended New Smart Bin Locations</h3>
+          <div id="mclp-locations-list" class="mclp-locations-list">
+            <!-- Rendered dynamically -->
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- CleanBot AI Floating Drawer -->
+  <div id="cleanbot-drawer" class="cleanbot-drawer hidden">
+    <div class="cleanbot-header">
+      <div class="cleanbot-brand">
+        <div class="cleanbot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div>
+          <h3 class="cleanbot-name">CleanBot AI Assistant</h3>
+          <span class="cleanbot-sub"><i class="fa-solid fa-bolt text-gold"></i> Powered by Sarvam AI (`sarvam-105b-conversations`)</span>
+        </div>
+      </div>
+      <button class="cleanbot-close" onclick="toggleCleanBot()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- Quick Prompts Bar -->
+    <div class="cleanbot-prompts">
+      <button class="prompt-chip" onclick="sendCleanBotPrompt('How do I correctly segregate household plastic and wet waste?')">Waste Segregation Rules</button>
+      <button class="prompt-chip" onclick="sendCleanBotPrompt('Which ward in Pune currently has the most unresolved complaints?')">Hotspot Wards</button>
+      <button class="prompt-chip" onclick="sendCleanBotPrompt('Where is the nearest community dustbin near MIT-WPU Kothrud?')">Nearby Dustbins</button>
+      <button class="prompt-chip" onclick="sendCleanBotPrompt('Summarize today\'s Pune municipal waste resolution performance.')">City Performance</button>
+    </div>
+
+    <div id="cleanbot-chat-body" class="cleanbot-chat-body">
+      <div class="chat-bubble bot">
+        <p>Namaste! I am <strong>CleanBot</strong>, your smart assistant for CleanGreen AI 2.0. Ask me anything about Pune waste segregation, tracking complaints, or municipal cleanliness insights!</p>
+      </div>
+    </div>
+
+    <div class="cleanbot-input-bar">
+      <input type="text" id="cleanbot-input" placeholder="Ask CleanBot (English, Marathi, Hindi)..." onkeydown="if(event.key==='Enter') sendCleanBotMessage()" />
+      <button id="btn-send-cleanbot" onclick="sendCleanBotMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+    </div>
+  </div>
+
+  <!-- Worker Resolve Modal with After-Cleanup Photo Upload -->
+  <div id="resolve-modal" class="modal-backdrop hidden">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fa-solid fa-check-circle text-emerald"></i> Resolve Cleanup Order</h3>
+        <button class="modal-close-btn" onclick="closeResolveModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="modal-task-title" class="mb-2"><strong>Task:</strong> TSK-01 (Complaint CG-2026-1002)</p>
+        <div class="form-group">
+          <label>Upload After-Cleanup Photograph:</label>
+          <input type="file" id="resolve-after-photo" accept="image/*" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label>Sanitation Worker Notes:</label>
+          <textarea id="resolve-notes" class="form-input" rows="2" placeholder="Waste swept and loaded onto truck. Pavement disinfected with lime powder."></textarea>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="submitTaskResolution()">
+          <i class="fa-solid fa-cloud-arrow-up"></i> Complete Order & Mark Resolved
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Forensic Waste Audit Modal (Pixel Minds / Garbage-Vision v2.0) -->
+  <div id="forensic-modal" class="modal-backdrop hidden">
+    <div class="forensic-modal-window">
+      <!-- Modal Header -->
+      <div class="forensic-header">
+        <div class="forensic-title-wrap">
+          <span id="forensic-report-id" class="forensic-id-tag">CMP-20261007_213322-553F</span>
+          <h2 id="forensic-report-title" class="forensic-main-title">Forensic Waste Audit — Warje, Anandnagar, Pune City Subdistrict, Pune District, Maharashtra, 411051, India</h2>
+        </div>
+        <div class="forensic-header-actions">
+          <button type="button" class="btn-delete-report" onclick="deleteCurrentForensicReport()">
+            <i class="fa-solid fa-trash-can"></i> Delete Report
+          </button>
+          <button type="button" class="forensic-close-btn" onclick="closeForensicModal()">&times;</button>
+        </div>
+      </div>
+
+      <div class="forensic-scroll-body">
+        <!-- Dual Image Viewer: Original vs Annotated -->
+        <div class="forensic-photos-grid">
+          <div class="photo-pane">
+            <div class="photo-pane-label">ORIGINAL CITIZEN PHOTO</div>
+            <div class="photo-img-wrap">
+              <img id="forensic-orig-img" src="" alt="Original Waste" />
+            </div>
+          </div>
+          <div class="photo-pane">
+            <div class="photo-pane-label text-emerald-dark">ANNOTATED (GARBAGE-VISION v2.0)</div>
+            <div class="photo-img-wrap" id="forensic-annotated-wrap">
+              <img id="forensic-annotated-img" src="" alt="Annotated Waste" />
+              <!-- Bounding box overlays generated dynamically -->
+              <div id="forensic-bounding-boxes-layer" class="bounding-boxes-layer"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 7 Key Metric Cards -->
+        <div class="forensic-cards-grid">
+          <div class="forensic-metric-card">
+            <span class="f-metric-label">SEVERITY</span>
+            <div class="f-metric-value text-red" id="f-severity-val">HIGH 65</div>
+            <span class="f-metric-sub">Index / 100</span>
+          </div>
+          <div class="forensic-metric-card">
+            <span class="f-metric-label">TOTAL ITEMS</span>
+            <div class="f-metric-value text-primary" id="f-total-items-val">14</div>
+            <span class="f-metric-sub">14 boxed regions</span>
+          </div>
+          <div class="forensic-metric-card card-alert-red">
+            <span class="f-metric-label text-red">SUP INFRACTIONS</span>
+            <div class="f-metric-value text-red" id="f-sup-val">1</div>
+            <span class="f-metric-sub">banned single-use</span>
+          </div>
+          <div class="forensic-metric-card">
+            <span class="f-metric-label">EST. LOAD</span>
+            <div class="f-metric-value text-amber" id="f-load-val">4.23 kg</div>
+            <span class="f-metric-sub" id="f-pieces-val">24 pieces</span>
+          </div>
+          <div class="forensic-metric-card">
+            <span class="f-metric-label">FRAME COVERAGE</span>
+            <div class="f-metric-value text-primary" id="f-coverage-val">66.8%</div>
+            <span class="f-metric-sub">littered area of photo</span>
+          </div>
+          <div class="forensic-metric-card">
+            <span class="f-metric-label">AI CONFIDENCE</span>
+            <div class="f-metric-value text-primary" id="f-conf-val">86%</div>
+            <span class="f-metric-sub">mean detection score</span>
+          </div>
+          <div class="forensic-metric-card card-alert-red">
+            <span class="f-metric-label text-red">SEGREGATION</span>
+            <div class="f-metric-value text-red" id="f-segregation-val">SINGLE-STREAM</div>
+            <span class="f-metric-sub" id="f-seg-sub-val">Dry Recyclable</span>
+          </div>
+        </div>
+
+        <!-- Dispatch Action Banner -->
+        <div class="forensic-dispatch-banner">
+          <i class="fa-solid fa-truck-ramp-box dispatch-icon"></i>
+          <div>
+            <strong>DISPATCH ACTION:</strong>
+            <span id="f-dispatch-action-text">Single-stream accumulation — schedule routine collection.</span>
+          </div>
+        </div>
+
+        <!-- Waste Stream Split Bar -->
+        <div class="forensic-stream-box">
+          <div class="f-stream-header">
+            <i class="fa-solid fa-earth-americas text-blue"></i>
+            <span id="f-stream-summary-title">WASTE STREAM SPLIT (24 PIECES · 4.23 kg)</span>
+          </div>
+          <div class="f-stream-bar">
+            <div class="f-stream-fill-blue" style="width: 100%;"></div>
+          </div>
+          <div class="f-stream-legend">
+            <span class="stream-dot-blue"></span>
+            <span id="f-stream-legend-text">Dry Recyclable — 100% · 4.23 kg</span>
+          </div>
+        </div>
+
+        <!-- Engine & Vision Audit Note -->
+        <div class="forensic-audit-box">
+          <div class="f-audit-line">
+            <strong><i class="fa-solid fa-microchip text-emerald"></i> ENGINE:</strong>
+            <span id="f-engine-text">On-device CV sweep (Garbage-Vision v2.0)</span>
+          </div>
+          <div class="f-audit-line mt-1">
+            <strong><i class="fa-solid fa-eye text-emerald"></i> VISION AUDIT NOTE:</strong>
+            <span id="f-audit-note-text">Multi-band sweep of the frame isolated 14 artifact cluster(s) over 66.8% of the image (mean edge density 50.1). Streams present: DRY_RECYCLABLE. Estimated load 4.23 kg across 24 pieces, 1 SUP-banned item(s). Severity HIGH (65/100) — Single-stream accumulation — schedule routine collection.</span>
+          </div>
+        </div>
+
+        <!-- Itemized Forensic Inventory Table -->
+        <div class="forensic-table-section">
+          <h4 class="f-table-title"><i class="fa-solid fa-list-ul"></i> ITEMIZED FORENSIC INVENTORY (<span id="f-itemized-count">14 Artifacts Identified</span>)</h4>
+          <div class="table-responsive">
+            <table class="forensic-data-table">
+              <thead>
+                <tr>
+                  <th>Item Name</th>
+                  <th>Stream</th>
+                  <th>Material / Resin</th>
+                  <th>SUP Violation</th>
+                  <th>Brand (EPR)</th>
+                  <th>Conf.</th>
+                </tr>
+              </thead>
+              <tbody id="forensic-inventory-tbody">
+                <!-- Injected via JavaScript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Status & Export Bar -->
+      <div class="forensic-bottom-bar">
+        <div class="f-status-control">
+          <label>Status:</label>
+          <select id="forensic-status-select" class="form-input-sm">
+            <option value="Submitted">Submitted</option>
+            <option value="Verified">Verified</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Worker En Route">Worker En Route</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+          <button type="button" class="btn btn-sm btn-primary" onclick="updateForensicStatus()">Update</button>
+        </div>
+        <div class="f-export-actions">
+          <button type="button" class="btn btn-sm btn-outline" onclick="downloadForensicJson()">
+            <i class="fa-solid fa-file-code"></i> report.json
+          </button>
+          <button type="button" class="btn btn-sm btn-outline" onclick="downloadForensicCsv()">
+            <i class="fa-solid fa-file-csv"></i> report.csv
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Application Logic -->
+  <script src="js/app.js"></script>
+</body>
+</html>

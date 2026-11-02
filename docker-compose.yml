@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  cleangreen-ai:
+    build: .
+    container_name: cleangreen-ai-2.0
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - SARVAM_API_KEY=${SARVAM_API_KEY}
+      - DATABASE_URL=sqlite:///./cleangreen.db
+    volumes:
+      - ./backend/uploads:/app/backend/uploads
+      - ./cleangreen.db:/app/cleangreen.db
